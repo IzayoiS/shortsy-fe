@@ -6,9 +6,26 @@ import type { AxiosError } from 'axios'
 
 const toast = useToast()
 const urlInput = ref('')
+const shortenedDisplay = ref('')
 const shortenedUrl = ref('')
 
 const { mutate: createShortLink, isPending } = useCreateShortLink()
+
+const copied = ref(false)
+
+const copyToClipboard = async () => {
+  if (!shortenedUrl.value) return
+  try {
+    await navigator.clipboard.writeText(shortenedUrl.value)
+    copied.value = true
+    toast.success('Short link copied to clipboard!')
+    setTimeout(() => {
+      copied.value = false
+    }, 2000)
+  } catch (err) {
+    toast.error('Failed to copy link.' + err)
+  }
+}
 
 const handleSubmit = () => {
   if (!urlInput.value.trim()) {
@@ -19,6 +36,12 @@ const handleSubmit = () => {
   createShortLink(urlInput.value, {
     onSuccess: (data) => {
       shortenedUrl.value = data.short
+
+      shortenedDisplay.value = data.short.replace(
+        'https://shortsy.up.railway.app',
+        'https://shortsy.app',
+      )
+
       toast.success(data.message)
       urlInput.value = ''
     },
@@ -61,13 +84,22 @@ const handleSubmit = () => {
   </div>
 
   <div class="p-4 bg-blue-100 max-w-screen-md w-full m-auto rounded-2xl mt-4">
-    <h1 class="text-black text-3xl font-bold">Result</h1>
+    <div class="flex gap-4">
+      <h1 class="text-black text-3xl font-bold">Result</h1>
+      <button
+        @click="copyToClipboard"
+        class="ml-auto btn btn-outline btn-sm text-lg text-black border-none hover:bg-transparent flex items-center"
+      >
+        <span v-if="copied">✅</span>
+        <span v-else>📋</span>
+      </button>
+    </div>
     <a
       class="mt-2 text-blue-700 cursor-pointer underline break-all"
       :href="shortenedUrl"
       target="_blank"
     >
-      {{ shortenedUrl }}
+      {{ shortenedDisplay }}
     </a>
   </div>
 </template>
